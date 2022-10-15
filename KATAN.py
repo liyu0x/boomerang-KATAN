@@ -56,7 +56,7 @@ def init_sub_key(key: int, num: int):
 
 def f_a(k_a):
     ir = IR & 0x3FF  # b1111111111
-    return L1[KATAN_X[0]] ^ L1[KATAN_X[1]] ^ (L1[KATAN_X[2]] & L1[KATAN_X[3]]) ^ (L1[KATAN_X[5]] & ir) ^ k_a
+    return L1[KATAN_X[0]] ^ L1[KATAN_X[1]] ^ (L1[KATAN_X[2]] & L1[KATAN_X[3]]) ^ (L1[KATAN_X[4]] & ir) ^ k_a
 
 
 def f_b(k_b):
@@ -89,8 +89,10 @@ def katan32(plaintext: int, key: int):
     init_sub_key(key, 253)
     round_func(4)
 
+def get_result():
+    
 
 if __name__ == "__main__":
-    p = 0xFFFFFFFFFFFFFFFF
+    p = 0xFFFFFFFF
     k = 0xFFFFFFFFFFFFFFFFFFFF
     katan32(p, k)
