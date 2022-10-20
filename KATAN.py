@@ -1,5 +1,21 @@
-IR = 0xb0103459eb3d0711345ca5bedf62a7295bec3354fd47cc50f0918293b3d57f8
-
+IR = (
+    1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1,
+    0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+    1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0,
+    0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+    0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1,
+    1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1,
+    0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0,
+    1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1,
+    1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1,
+    0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1,
+    1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0,
+    0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1,
+    0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1,
+    1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0
+)
 KATAN_32_X = [12, 7, 8, 5, 3]
 KATAN_48_X = [18, 12, 15, 7, 6]
 KATAN_64_X = [24, 15, 20, 11, 9]
@@ -24,6 +40,7 @@ def num_to_bits(num: int, length=32):
 
 def bits_to_num(nums: list):
     res = ''
+    nums.reverse()
     for n in nums:
         res += str(n)
     return int(res, 2)
@@ -31,7 +48,7 @@ def bits_to_num(nums: list):
 
 def init_register(length_1: int, length_2: int):
     global L1, L2
-    L1, L2 = [0 for i in range(length_1)], [0 for i in range(length_2)]
+    L1, L2 = [0 for _ in range(length_1)], [0 for _ in range(length_2)]
 
 
 def into_registers(bits: list):
@@ -46,36 +63,28 @@ def into_registers(bits: list):
         i += 1
 
 
-def init_sub_key(key: int, num: int):
+def init_sub_key(key: int):
     global SUB_KEYS
     SUB_KEYS = num_to_bits(key, 80)
-    for i in range(80, num):
+    for i in range(80, 508):
         sub_key = SUB_KEYS[i - 80] ^ SUB_KEYS[i - 61] ^ SUB_KEYS[i - 50] ^ SUB_KEYS[i - 13]
         SUB_KEYS.append(sub_key)
 
 
-def f_a(k_a):
-    ir = IR & 0x3FF  # b1111111111
-    return L1[KATAN_X[0]] ^ L1[KATAN_X[1]] ^ (L1[KATAN_X[2]] & L1[KATAN_X[3]]) ^ (L1[KATAN_X[4]] & ir) ^ k_a
-
-
-def f_b(k_b):
-    return L2[KATAN_Y[0]] ^ L2[KATAN_Y[1]] ^ (L2[KATAN_Y[2]] & L2[KATAN_Y[3]]) ^ (L2[KATAN_Y[4]] & L2[KATAN_Y[5]]) ^ k_b
-
-
 def round_func(round_num: int):
-    global L1, L2, IR
+    global L1, L2
     i = 0
-    while True:
+    for i in range(round_num):
         if i == round_num:
             break
-        a = f_a(SUB_KEYS[i * 2])
-        b = f_b(SUB_KEYS[i * 2 + 1])
-        L1[0] = b
-        L2[0] = a
-        i += 1
-        if i % 10 == 0:
-            IR >>= 10
+        a = L1[KATAN_X[0]] ^ L1[KATAN_X[1]] ^ (L1[KATAN_X[2]] & L1[KATAN_X[3]]) ^ (L1[KATAN_X[4]] & IR[i]) ^ SUB_KEYS[
+            i * 2]
+        b = L2[KATAN_Y[0]] ^ L2[KATAN_Y[1]] ^ (L2[KATAN_Y[2]] & L2[KATAN_Y[3]]) ^ (L2[KATAN_Y[4]] & L2[KATAN_Y[5]]) ^ \
+            SUB_KEYS[i * 2 + 1]
+        L1.pop()
+        L2.pop()
+        L1.insert(0, b)
+        L2.insert(0, a)
 
 
 def katan32(plaintext: int, key: int):
@@ -86,13 +95,20 @@ def katan32(plaintext: int, key: int):
     init_register(13, 19)
     bits = num_to_bits(plaintext, length)
     into_registers(bits)
-    init_sub_key(key, 253)
-    round_func(4)
+    init_sub_key(key)
+    round_func(254)
+
 
 def get_result():
-    
+    c = L2 + L1
+    return bits_to_num(c)
+
 
 if __name__ == "__main__":
+    # p = 0x00000000
+    # k = 0xFFFFFFFFFFFFFFFFFFFF
     p = 0xFFFFFFFF
-    k = 0xFFFFFFFFFFFFFFFFFFFF
+    k = 0
     katan32(p, k)
+    cipher = get_result()
+    print(hex(cipher))
