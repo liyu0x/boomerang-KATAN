@@ -1,0 +1,63 @@
+This is BibTeX, Version 0.99d (TeX Live 2022)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: usmthesis.aux
+The style file: apacite.bst
+A level-1 auxiliary file: Frontmatter/declaration.aux
+A level-1 auxiliary file: Frontmatter/acknowledgements.aux
+A level-1 auxiliary file: FrontMatter/loa.aux
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 9000 items from 6000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: mybib.bib
+apacite.bst [2013/07/21 v6.03 APA bibliography style]
+Warning--No journal in dworkin2001advanced
+Warning--`others' not consistent with 6th ed. of the APA Manual
+Warning--No journal in dworkin2015sha
+You've used 18 entries,
+            6951 wiz_defined-function locations,
+            1385 strings with 14024 characters,
+and the built_in function-call counts, 37078 in all, are:
+= -- 4852
+> -- 381
+< -- 1464
++ -- 1492
+- -- 40
+* -- 2126
+:= -- 5899
+add.period$ -- 94
+call.type$ -- 18
+change.case$ -- 319
+chr.to.int$ -- 0
+cite$ -- 38
+duplicate$ -- 1028
+empty$ -- 1486
+format.name$ -- 551
+if$ -- 7453
+int.to.chr$ -- 0
+int.to.str$ -- 54
+missing$ -- 0
+newline$ -- 472
+num.names$ -- 152
+pop$ -- 890
+preamble$ -- 1
+purify$ -- 74
+quote$ -- 0
+skip$ -- 2645
+stack$ -- 0
+substring$ -- 1756
+swap$ -- 657
+text.length$ -- 115
+text.prefix$ -- 0
+top$ -- 1
+type$ -- 2208
+warning$ -- 3
+while$ -- 210
+width$ -- 0
+write$ -- 599
+(There were 3 warnings)

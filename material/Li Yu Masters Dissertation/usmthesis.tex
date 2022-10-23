@@ -1,0 +1,147 @@
+\documentclass{usmthesis}
+%%%%%%%%%%%%%%%%%%%%%
+%These are all "libraries" or packages. You can include new ones here.
+%%%%%%%%%%%%%%%%%%%%%
+\usepackage{marvosym}
+\usepackage{enumitem}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily,breaklines=true}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{indentfirst}
+\usepackage{afterpage}
+\usepackage{amssymb}
+\usepackage{varwidth}
+\usepackage{array}
+\usepackage{pdflscape}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\newtheorem{myDef}{Definition}
+\newtheorem{myLem}{Lemma}
+\usepackage{tocloft}
+\usepackage{tikz}
+\usetikzlibrary{perspective}
+\newcolumntype{M}[1]{>{\begin{varwidth}[t]{#1}}l<{\end{varwidth}}}
+	
+%%%%%%%%%%%%%%%%%%%%%
+%Update your information here
+%%%%%%%%%%%%%%%%%%%%%
+\author{LI YU}	
+\title{Boomerang Attacks on KATAN Revisited}
+\titlems{Serangan Boomerang ke atas KATAN Dilawati Semula}
+\submityear{2022}
+\submitmonth{January}
+%Doctor of Philosophy/Master of Science
+\degreetype{Master of Science}
+
+%Don't edit the following%
+\newcites{own}{List of Publications}
+
+\ifpdf
+  \makeatletter
+  \usepackage[pdftex,plainpages=false,hypertexnames=false,bookmarksnumbered,pdfpagelabels,%
+    pdfauthor={\@author},pdftitle={\@title}]{hyperref}
+  \makeatother
+\else
+  \usepackage[dvips,plainpages=false,bookmarksnumbered,breaklinks=true]{hyperref}
+\fi
+
+\usepackage{ragged2e}
+
+\begin{document}
+
+\bibliographystyle{apacite}
+\bibliographystyleown{apacite}
+\frontmatter
+\frontmatter
+\makecover
+
+%Edit files in FrontMatter folder
+\include{Frontmatter/declaration}
+\include{Frontmatter/acknowledgements}
+
+\begin{singlespace}
+\tableofcontents \clearpage
+\listoftables \clearpage
+\listoffigures \clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% You can comment out the following line if you don't
+% have a "List of Plates"
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\listofplates \clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% You can comment out the following line if you don't
+% have a "List of Acronyms"
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{FrontMatter/loa}
+\end{singlespace}
+
+% Paragraph spacing
+\setlength\parskip{18pt}
+% Text-float spacing
+\setlength\intextsep{24pt}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Your Malay and English abstracts, each in one file.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{doublespace}
+\input{FrontMatter/abs-mal}
+\input{FrontMatter/abs-eng}
+
+\mainmatter
+
+%Edit the main files. All your diagrams should be in the main folder, not the chapter folder
+\input{Chapters/chap1-intro} %Contains a sample image
+\input{Chapters/chap2-review}
+\input{Chapters/chap3-methodology}
+%Proposal ends here. But if you have anything partially designed, you can include chapter 4. For proposal also, you can include a brief conclusion.
+\input{Chapters/chap4-results}
+\input{Chapters/chap5-conclusion}
+
+\end{doublespace}
+\titlespacing*{\chapter}{0pt}{25mm}{\baselineskip}
+\begin{singlespace}
+\bibliography{mybib}
+\end{singlespace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The appendices.
+% If you don't have any, you may delete everything below,
+% until and including \input{appendices}.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\titlespacing*{\chapter}{0pt}{*-4.5}{*4}
+\appendix
+\assignpagestyle{\chapter}{empty}
+
+%Comment out these parts if you do not have appendices
+\input{BackMatter/app-data}
+
+\addtocontents{toc}{%
+ \protect\vspace{1em}% 
+ \protect\noindent \textbf{APPENDICES}\protect\par
+ %\protect\vspace{-1em}%
+}
+\addtocontents{toc}{%
+ \protect\vspace{1em}% 
+ \protect\noindent \textbf{LIST OF PUBLICATIONS}\protect\par
+ %\protect\vspace{-1em}%
+}
+\assignpagestyle{\chapter}{plain}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The list of own publications.  If you don't have one, you may
+% comment out the next 4 lines.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\nociteown{Teh2015}
+\begin{singlespace}
+\backmatter
+
+%Uncomment the following and edit publist.tex if you have publications to share
+%\input{publist}
+
+\end{singlespace}
+
+\end{document}
