@@ -71,7 +71,7 @@ def init_sub_key(key: int):
         SUB_KEYS.append(sub_key)
 
 
-def round_func(round_num: int):
+def round_enc_func(round_num: int):
     global L1, L2
     i = 0
     for i in range(round_num):
@@ -87,6 +87,23 @@ def round_func(round_num: int):
         L2.insert(0, a)
 
 
+def round_dec_func(round_num: int):
+    global L1, L2
+    i = 0
+    for i in range(round_num):
+        if i == round_num:
+            break
+        a = L2[0] ^ L1[KATAN_X[1] + 1] ^ (L1[KATAN_X[2] + 1] & L1[KATAN_X[3] + 1]) ^ (L1[KATAN_X[4] + 1] & IR[i]) ^ \
+            SUB_KEYS[i * 2]
+        b = L1[0] ^ L2[KATAN_Y[1] + 1] ^ (L2[KATAN_Y[2] + 1] & L2[KATAN_Y[3] + 1]) ^ (
+                L2[KATAN_Y[4] + 1] & L2[KATAN_Y[5] + 1]) ^ \
+            SUB_KEYS[i * 2 + 1]
+        L1.pop(0)
+        L1.append(a)
+        L2.pop(0)
+        L2.append(b)
+
+
 def katan32(plaintext: int, key: int):
     global KATAN_X, KATAN_Y
     length = 32
@@ -96,7 +113,7 @@ def katan32(plaintext: int, key: int):
     bits = num_to_bits(plaintext, length)
     into_registers(bits)
     init_sub_key(key)
-    round_func(254)
+    round_enc_func(254)
 
 
 def get_result():
