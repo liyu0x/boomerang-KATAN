@@ -19,3 +19,9 @@ def ax_box(x):
     x2 = x >> 1 & 0x1
     x3 = x & 0x1
     return (x0 & x1) ^ (x2 & x3)
+
+
+def ax_box_2_bits(x):
+    x0 = x >> 1 & 0x1
+    x1 = x & 0x1
+    return x0 & x1
