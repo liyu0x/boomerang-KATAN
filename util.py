@@ -13,12 +13,21 @@ def bits_to_num(bits: list):
     return res
 
 
-def ax_box(x):
-    x0 = x >> 3 & 0x1
-    x1 = x >> 2 & 0x1
-    x2 = x >> 1 & 0x1
-    x3 = x & 0x1
-    return (x0 & x1) ^ (x2 & x3)
+def ax_box(x, bit_size):
+    res = 0
+    for i in range(bit_size - 1, 0, -2):
+        x0 = x >> i & 0x1
+        x1 = x >> (i - 1) & 0x1
+        res ^= (x0 & x1)
+    return res
+
+
+def ax_box2(x):
+    res = 0
+    x0 = x >> 2 & 0x11
+    x1 = x & 0x11
+    res ^= (x0 & x1)
+    return res
 
 
 def ax_box_2_bits(x):

@@ -1,43 +1,89 @@
 import random, katan, numpy, util
 
-BIG_BCT_INPUT_SIZE, BIG_BCT_OUTPUT_SIZE = 4, 4
-SMALL_BCT_INPUT_SIZE, SMALL_BCT_OUTPUT_SIZE = 2, 2
-
+BCT_INPUT_SIZE, BCT_OUTPUT_SIZE = 2, 2
+N_BCT_INPUT_SIZE, N_BCT_OUTPUT_SIZE = 6, 6
 SMALL_REGISTER_OFFSET = 19
 BIG_REGISTER_OFFSET = 0
 
-B_BCT = numpy.zeros([2 ** BIG_BCT_INPUT_SIZE, 2 ** BIG_BCT_OUTPUT_SIZE], dtype=int)
-S_BCT = numpy.zeros([2 ** SMALL_BCT_INPUT_SIZE, 2 ** SMALL_BCT_OUTPUT_SIZE], dtype=int)
-
-FOUR_X_INDEXES = [SMALL_REGISTER_OFFSET + x for x in [8, 5, 3]]
-FOUR_Y_INDEXES = [BIG_REGISTER_OFFSET + x for x in [12, 10, 8, 3]]
+BCT = numpy.zeros([2 ** BCT_INPUT_SIZE, 2 ** BCT_OUTPUT_SIZE], dtype=int)
+BCT2 = numpy.zeros([2 ** N_BCT_INPUT_SIZE, 2 ** N_BCT_OUTPUT_SIZE], dtype=int)
+DDT = numpy.zeros([2 ** 4, 2 ** 2], dtype=int)
+DDT2 = numpy.zeros([2 ** 3, 2 ** 3], dtype=int)
 
 
 def create_bct():
-    for delta_in in range(2 ** BIG_BCT_INPUT_SIZE):
-        for delta_out in range(2 ** BIG_BCT_OUTPUT_SIZE):
-            for x in range(2 ** BIG_BCT_INPUT_SIZE):
+    for delta_in in range(2 ** BCT_INPUT_SIZE):
+        for delta_out in range(2 ** BCT_OUTPUT_SIZE):
+            for x in range(2 ** BCT_INPUT_SIZE):
                 x_delta_in = x ^ delta_in
                 x_delta_out = x ^ delta_out
                 x_delta_in_out = x ^ delta_in ^ delta_out
-                r_x = util.ax_box(x)
-                r_x_delta_in = util.ax_box(x_delta_in)
-                r_x_delta_out = util.ax_box(x_delta_out)
-                r_x_delta_in_out = util.ax_box(x_delta_in_out)
+                r_x = util.ax_box(x, BCT_INPUT_SIZE)
+                r_x_delta_in = util.ax_box(x_delta_in, BCT_INPUT_SIZE)
+                r_x_delta_out = util.ax_box(x_delta_out, BCT_INPUT_SIZE)
+                r_x_delta_in_out = util.ax_box(x_delta_in_out, BCT_INPUT_SIZE)
                 if r_x ^ r_x_delta_in ^ r_x_delta_out ^ r_x_delta_in_out == 0:
-                    B_BCT[delta_in][delta_out] += 1
-    for delta_in in range(2 ** SMALL_BCT_INPUT_SIZE):
-        for delta_out in range(2 ** SMALL_BCT_OUTPUT_SIZE):
-            for x in range(2 ** SMALL_BCT_INPUT_SIZE):
+                    BCT[delta_in][delta_out] += 1
+
+
+def create_bct2():
+    for delta_in in range(2 ** N_BCT_INPUT_SIZE):
+        for delta_out in range(2 ** N_BCT_OUTPUT_SIZE):
+            for x in range(2 ** N_BCT_INPUT_SIZE):
                 x_delta_in = x ^ delta_in
                 x_delta_out = x ^ delta_out
                 x_delta_in_out = x ^ delta_in ^ delta_out
-                r_x = util.ax_box_2_bits(x)
-                r_x_delta_in = util.ax_box_2_bits(x_delta_in)
-                r_x_delta_out = util.ax_box_2_bits(x_delta_out)
-                r_x_delta_in_out = util.ax_box_2_bits(x_delta_in_out)
+                r_x = util.ax_box2(x)
+                r_x_delta_in = util.ax_box2(x_delta_in)
+                r_x_delta_out = util.ax_box2(x_delta_out)
+                r_x_delta_in_out = util.ax_box2(x_delta_in_out)
                 if r_x ^ r_x_delta_in ^ r_x_delta_out ^ r_x_delta_in_out == 0:
-                    S_BCT[delta_in][delta_out] += 1
+                    BCT2[delta_in][delta_out] += 1
+
+
+def create_ddt():
+    for delta_in in range(2 ** 4):
+        for delta_out in range(2 ** 2):
+            for x0 in range(2 ** 4):
+                x1 = x0 ^ delta_in
+
+                x0_0 = x0 & 0x11
+                x0_1 = (x0 >> 2) & 0x11
+                y0 = x0_0 & x0_1
+
+                x1_0 = x1 & 0x11
+                x1_1 = (x1 >> 2) & 0x11
+                y1 = x1_0 & x1_1
+
+                out = y0 ^ y1
+
+                if out == delta_out:
+                    DDT[delta_in][delta_out] += 1
+
+
+def create_ddt2():
+    for delta_in in range(2 ** 3):
+        for delta_out in range(2 ** 3):
+            for x0 in range(2 ** 3):
+                x1 = x0 ^ delta_in
+
+                x0_0 = x0 & 0x1
+                x0_1 = (x0 >> 1) & 0x1
+                x0_2 = (x0 >> 2) & 0x1
+                y0 = x0_0 ^ (x0_1 & x0_2)
+
+                x1_0 = x1 & 0x1
+                x1_1 = (x1 >> 1) & 0x1
+                x1_2 = (x1 >> 2) & 0x1
+                y1 = x1_0 ^ (x1_1 & x1_2)
+
+                y0 = x0 & 0x0110 | y0
+                y1 = x1 & 0x0110 | y1
+
+                out = y0 ^ y1
+
+                if out == delta_out:
+                    DDT2[delta_in][delta_out] += 1
 
 
 def compute_different(x, delta, bits_indexes):
@@ -60,11 +106,11 @@ def get_difference(x1, x2, bits_indexes):
 
 def check_validation_bct():
     active = 0
-    big_register_delta_and_in = 7
-    big_register_delta_and_out = 13
+    big_register_delta_and_in = 12
+    big_register_delta_and_out = 12
     small_register_delta_and_in = 2
-    small_register_delta_and_out = 3
-    left_diff = 5
+    small_register_delta_and_out = 1
+    left_diff = 0
     right_diff = 1
     total = 2 ** 10
     key = 0xFFFFFFFFFFFFFFFFFFFF
@@ -72,11 +118,11 @@ def check_validation_bct():
         p1 = random.randint(1, 2 ** 32)
 
         p2 = p1
-        p2 = compute_different(p1, big_register_delta_and_in, [3, 8, 10, 12])
+        p2 = compute_different(p2, big_register_delta_and_in, [3, 8, 10, 12])
         p2 = compute_different(p2, small_register_delta_and_in, [19 + 5, 19 + 8])
 
         p2 = compute_different(p2, right_diff, [18])
-        p2 = compute_different(p2, left_diff, [19 + 3, 19 + 7, 19 + 12])
+        p2 = compute_different(p2, left_diff, [19 + 12])
 
         c1 = katan.enc32(p1, key)
         c2 = katan.enc32(p2, key)
@@ -92,7 +138,7 @@ def check_validation_bct():
         p3 = katan.dec32(c3, key)
         p4 = katan.dec32(c4, key)
         r1 = get_difference(p3, p4, [18])
-        l1 = get_difference(p3, p4, [19 + 3, 19 + 7, 19 + 12])
+        l1 = get_difference(p3, p4, [19 + 12])
         if l1 == left_diff and r1 == right_diff:
             active += 1
     print(active)
@@ -100,5 +146,7 @@ def check_validation_bct():
 
 if __name__ == "__main__":
     create_bct()
-    check_validation_bct()
+    # check_validation_bct()
+    create_ddt()
+    create_bct2()
     print("done")
