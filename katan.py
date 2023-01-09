@@ -42,7 +42,7 @@ def init_sub_key(key: int):
         SUB_KEYS.append(sub_key)
 
 
-def round_enc_func(round_num: int, differ: int):
+def round_enc_func(round_num: int):
     global L1, L2
     for i in range(round_num):
         if i == round_num:
@@ -53,8 +53,6 @@ def round_enc_func(round_num: int, differ: int):
         b = L2[Y_INDEXES[0]] ^ L2[Y_INDEXES[1]] ^ (L2[Y_INDEXES[2]] & L2[Y_INDEXES[3]]) ^ (
                 L2[Y_INDEXES[4]] & L2[Y_INDEXES[5]]) ^ \
             SUB_KEYS[i * 2 + 1]
-        b ^= differ
-        a ^= differ
         L1.pop()
         L2.pop()
         L1.insert(0, b)
@@ -76,7 +74,7 @@ def round_dec_func(round_num: int):
         L2.append(b)
 
 
-def enc32(plaintext: int, key: int, diff=0):
+def enc32(plaintext: int, key: int):
     global X_INDEXES, Y_INDEXES, L1, L2
     X_INDEXES = X_INDEXES_32
     Y_INDEXES = Y_INDEXES_32
@@ -84,8 +82,19 @@ def enc32(plaintext: int, key: int, diff=0):
     bits = util.num_to_bits(plaintext)
     L2 = bits[:19]
     L1 = bits[19:]
-    round_enc_func(TEST_ROUNDS, diff)
+    round_enc_func(TEST_ROUNDS)
     return get_result()
+
+
+def enc32_bit(l1, l2, key: int):
+    global X_INDEXES, Y_INDEXES, L1, L2
+    X_INDEXES = X_INDEXES_32
+    Y_INDEXES = Y_INDEXES_32
+    init_sub_key(key)
+    L2 = l2
+    L1 = l1
+    round_enc_func(TEST_ROUNDS)
+    return L1, L2
 
 
 def dec32(cipher: int, key: int):
@@ -98,6 +107,17 @@ def dec32(cipher: int, key: int):
     init_sub_key(key)
     round_dec_func(TEST_ROUNDS)
     return get_result()
+
+
+def dec32_bit(l1, l2, key: int):
+    global X_INDEXES, Y_INDEXES, L1, L2
+    X_INDEXES = X_INDEXES_32
+    Y_INDEXES = Y_INDEXES_32
+    L2 = l2
+    L1 = l1
+    init_sub_key(key)
+    round_dec_func(TEST_ROUNDS)
+    return L1, L2
 
 
 def get_result():

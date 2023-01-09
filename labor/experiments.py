@@ -1,7 +1,7 @@
 import random, katan, numpy, util
 
 BCT_INPUT_SIZE, BCT_OUTPUT_SIZE = 2, 2
-N_BCT_INPUT_SIZE, N_BCT_OUTPUT_SIZE = 6, 6
+N_BCT_INPUT_SIZE, N_BCT_OUTPUT_SIZE = 4, 4
 SMALL_REGISTER_OFFSET = 19
 BIG_REGISTER_OFFSET = 0
 
@@ -47,12 +47,12 @@ def create_ddt():
             for x0 in range(2 ** 4):
                 x1 = x0 ^ delta_in
 
-                x0_0 = x0 & 0x11
-                x0_1 = (x0 >> 2) & 0x11
+                x0_0 = x0 & 0b11
+                x0_1 = (x0 >> 2) & 0b11
                 y0 = x0_0 & x0_1
 
-                x1_0 = x1 & 0x11
-                x1_1 = (x1 >> 2) & 0x11
+                x1_0 = x1 & 0b11
+                x1_1 = (x1 >> 2) & 0b11
                 y1 = x1_0 & x1_1
 
                 out = y0 ^ y1
@@ -106,11 +106,11 @@ def get_difference(x1, x2, bits_indexes):
 
 def check_validation_bct():
     active = 0
-    big_register_delta_and_in = 12
-    big_register_delta_and_out = 12
-    small_register_delta_and_in = 2
+    big_register_delta_and_in = 0
+    big_register_delta_and_out = 4
+    small_register_delta_and_in = 1
     small_register_delta_and_out = 1
-    left_diff = 0
+    left_diff = 1
     right_diff = 1
     total = 2 ** 10
     key = 0xFFFFFFFFFFFFFFFFFFFF
@@ -146,7 +146,7 @@ def check_validation_bct():
 
 if __name__ == "__main__":
     create_bct()
-    # check_validation_bct()
-    create_ddt()
-    create_bct2()
+    check_validation_bct()
+    # create_ddt()
+    # create_bct2()
     print("done")
