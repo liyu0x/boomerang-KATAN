@@ -8,6 +8,10 @@ def general_and_operation(x: int, involve_bits_length: int):
         bit_extraction |= 0b1
     a0 = x & bit_extraction
     a1 = x >> involve_bits_length & bit_extraction
+
+    # temp
+    # a0 = x & 0x11
+    # a1 = x >> 2 & 0x11
     return a0 & a1
 
 
@@ -41,3 +45,6 @@ def create_and_bct(non_linear, involve_bits_length: int):
                     and_bct[delta_in][nabla_out] += 1
     return and_bct
 
+
+_1 = create_and_bct(general_and_operation, 1)
+_2 = create_and_bct(general_and_operation, 2)

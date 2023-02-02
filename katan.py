@@ -1,6 +1,6 @@
 import util
 
-TEST_ROUNDS = 1
+TEST_ROUNDS = 254
 
 IR = (
     1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1,
@@ -74,7 +74,7 @@ def round_dec_func(round_num: int):
         L2.append(b)
 
 
-def enc32(plaintext: int, key: int):
+def enc32(plaintext: int, key: int, round_num=TEST_ROUNDS):
     global X_INDEXES, Y_INDEXES, L1, L2
     X_INDEXES = X_INDEXES_32
     Y_INDEXES = Y_INDEXES_32
@@ -82,22 +82,22 @@ def enc32(plaintext: int, key: int):
     bits = util.num_to_bits(plaintext)
     L2 = bits[:19]
     L1 = bits[19:]
-    round_enc_func(TEST_ROUNDS)
+    round_enc_func(round_num)
     return get_result()
 
 
-def enc32_bit(l1, l2, key: int):
+def enc32_bit(l1, l2, key: int, round_num=TEST_ROUNDS):
     global X_INDEXES, Y_INDEXES, L1, L2
     X_INDEXES = X_INDEXES_32
     Y_INDEXES = Y_INDEXES_32
     init_sub_key(key)
     L2 = l2
     L1 = l1
-    round_enc_func(TEST_ROUNDS)
+    round_enc_func(round_num)
     return L1, L2
 
 
-def dec32(cipher: int, key: int):
+def dec32(cipher: int, key: int, round_num=TEST_ROUNDS):
     global X_INDEXES, Y_INDEXES, L1, L2
     X_INDEXES = X_INDEXES_32
     Y_INDEXES = Y_INDEXES_32
@@ -105,18 +105,18 @@ def dec32(cipher: int, key: int):
     L2 = bits[:19]
     L1 = bits[19:]
     init_sub_key(key)
-    round_dec_func(TEST_ROUNDS)
+    round_dec_func(round_num)
     return get_result()
 
 
-def dec32_bit(l1, l2, key: int):
+def dec32_bit(l1, l2, key: int, round_num=TEST_ROUNDS):
     global X_INDEXES, Y_INDEXES, L1, L2
     X_INDEXES = X_INDEXES_32
     Y_INDEXES = Y_INDEXES_32
     L2 = l2
     L1 = l1
     init_sub_key(key)
-    round_dec_func(TEST_ROUNDS)
+    round_dec_func(round_num)
     return L1, L2
 
 

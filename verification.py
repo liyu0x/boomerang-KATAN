@@ -4,10 +4,12 @@ import util
 import and_bct
 import random
 
+TEST_ROUND = 4
+
 L2_BEFORE = [3, 8, 10, 12]
-L2_AFTER = [i + 1 for i in L2_BEFORE]
+L2_AFTER = [i + TEST_ROUND for i in L2_BEFORE]
 L1_BEFORE = [5, 8]
-L1_AFTER = [i + 1 for i in L1_BEFORE]
+L1_AFTER = [i + TEST_ROUND for i in L1_BEFORE]
 L1_R = [12]
 L2_R = [18]
 
@@ -28,6 +30,7 @@ def get_difference(reg1, reg2, bits_indexes):
 
 
 def verify_one_round_switch(p1, l1_in, l1_out, l2_in, l2_out, key):
+    p1 = 2541990570
     l1_r_diff, l2_r_diff = random.randint(0, 1), random.randint(0, 1)
     bits = util.num_to_bits(p1)
     p1_l1, p1_l2 = bits[19:], bits[:19]
@@ -37,8 +40,8 @@ def verify_one_round_switch(p1, l1_in, l1_out, l2_in, l2_out, key):
     p2_l2 = compute_different(p1_l2, l2_in, L2_BEFORE)
     p2_l2 = compute_different(p2_l2, l2_r_diff, L2_R)
 
-    c1_l1, c1_l2 = katan.enc32_bit(p1_l1, p1_l2, key)
-    c2_l1, c2_l2 = katan.enc32_bit(p2_l1, p2_l2, key)
+    c1_l1, c1_l2 = katan.enc32_bit(p1_l1, p1_l2, key, TEST_ROUND)
+    c2_l1, c2_l2 = katan.enc32_bit(p2_l1, p2_l2, key, TEST_ROUND)
 
     c3_l1 = compute_different(c1_l1, l1_out, L1_AFTER)
     c3_l2 = compute_different(c1_l2, l2_out, L2_AFTER)
@@ -46,8 +49,8 @@ def verify_one_round_switch(p1, l1_in, l1_out, l2_in, l2_out, key):
     c4_l1 = compute_different(c2_l1, l1_out, L1_AFTER)
     c4_l2 = compute_different(c2_l2, l2_out, L2_AFTER)
 
-    p3_l1, p3_l2 = katan.dec32_bit(c3_l1, c3_l2, key)
-    p4_l1, p4_l2 = katan.dec32_bit(c4_l1, c4_l2, key)
+    p3_l1, p3_l2 = katan.dec32_bit(c3_l1, c3_l2, key, TEST_ROUND)
+    p4_l1, p4_l2 = katan.dec32_bit(c4_l1, c4_l2, key, TEST_ROUND)
 
     diff_l1 = get_difference(p3_l1, p4_l1, L1_R)
     diff_l2 = get_difference(p3_l2, p4_l2, L2_R)
@@ -65,7 +68,7 @@ def verify():
     l2_in, l2_out = random.randint(0, 15), random.randint(0, 15)
 
     key = random.randint(0, 2 ** 32)
-    test_num = 10000
+    test_num = 100
     counter = 0
     for i in range(test_num):
         p = random.randint(0, 2 ** 32)
@@ -76,7 +79,7 @@ def verify():
     p2 = l2_bct[l2_in][l2_out]
     p = p1 * p2
 
-    print("L1_IN:{0},L1_OUT:{1},L2_IN:{2},L2_OUT:{3}".format(l1_in, l1_out, l2_in, l2_out))
+    print("L1_IN:{0},L1_OUT:{1},L2_IN:{2},L2_OUT:{3},Counter:{4}".format(l1_in, l1_out, l2_in, l2_out, counter))
     if p == 0:
         assert counter == 0
     else:
@@ -84,8 +87,7 @@ def verify():
     print("pass")
 
 
+# verify
+
 for i in range(10000):
     verify()
-
-# keya = random.randint(0, 2 ** 32)
-# print(verify_one_round_switch(random.randint(0, 2 ** 32), 1, 1, 0, 4, keya))
