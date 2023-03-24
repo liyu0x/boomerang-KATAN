@@ -8,7 +8,7 @@ def create_and_bct(non_linear, involve_bits_length: int):
     :param involve_bits_length: length of a number involving AND-operation
     :return: AND-BCT
     """
-    table_size = 2 ** 8
+    table_size = 2 ** 16
     and_bct = numpy.zeros((table_size, table_size), dtype=int)
     for delta_in in range(table_size):
         for nabla_out in range(table_size):
