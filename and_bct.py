@@ -3,7 +3,7 @@ import numpy
 
 def general_and_operation(x: int, involve_bits_length: int):
     bit_extraction = 0
-    for _ in range(involve_bits_length):
+    for _ in range(involve_bits_length + 1):
         bit_extraction <<= 1
         bit_extraction |= 0b1
     a0 = x & bit_extraction
@@ -46,5 +46,5 @@ def create_and_bct(non_linear, involve_bits_length: int):
     return and_bct
 
 
-_1 = create_and_bct(general_and_operation, 1)
-_2 = create_and_bct(general_and_operation, 2)
+#_1 = create_and_bct(general_and_operation, 1)
+_2 = create_and_bct(general_and_xor_connection, 2)
