@@ -30,7 +30,6 @@ def get_difference(reg1, reg2, bits_indexes):
 
 
 def verify_one_round_switch(p1, l1_in, l1_out, l2_in, l2_out, key):
-    p1 = 2541990570
     l1_r_diff, l2_r_diff = random.randint(0, 1), random.randint(0, 1)
     bits = util.num_to_bits(p1)
     p1_l1, p1_l2 = bits[19:], bits[:19]

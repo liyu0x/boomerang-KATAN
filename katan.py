@@ -83,7 +83,9 @@ def enc32(plaintext: int, key: int, round_num=TEST_ROUNDS):
     L2 = bits[:19]
     L1 = bits[19:]
     round_enc_func(round_num)
-    return get_result()
+    c = L2 + L1
+    c.reverse()
+    return util.bits_to_num(c)
 
 
 def enc32_bit(l1, l2, key: int, round_num=TEST_ROUNDS):
@@ -101,12 +103,14 @@ def dec32(cipher: int, key: int, round_num=TEST_ROUNDS):
     global X_INDEXES, Y_INDEXES, L1, L2
     X_INDEXES = X_INDEXES_32
     Y_INDEXES = Y_INDEXES_32
+    init_sub_key(key)
     bits = util.num_to_bits(cipher)
     L2 = bits[:19]
     L1 = bits[19:]
-    init_sub_key(key)
     round_dec_func(round_num)
-    return get_result()
+    c = L2 + L1
+    c.reverse()
+    return util.bits_to_num(c)
 
 
 def dec32_bit(l1, l2, key: int, round_num=TEST_ROUNDS):
@@ -136,6 +140,7 @@ def verify():
     plaintext = dec32(cipher, key)
     if plaintext != p:
         print("DECRYPTION ERROR")
+        return
     print("verified")
 
 

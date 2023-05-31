@@ -3,7 +3,6 @@ def num_to_bits(num: int, length=32):
     for i in range(length):
         bits.append(num & 0b1)
         num >>= 1
-    bits.reverse()
     return bits
 
 
