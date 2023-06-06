@@ -5,7 +5,7 @@ from katan_task import checks
 # from simon_task import checks
 
 
-POOL = multiprocessing.Pool(processes=6)
+POOL = multiprocessing.get_context("fork").Pool(processes=6)
 ROUNDS = 60-1
 WEIGHT = 21
 # SWITCH_ROUNDS = 1
