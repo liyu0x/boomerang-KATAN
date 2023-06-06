@@ -1,4 +1,4 @@
-import katan
+import katan_self
 import util
 import and_bct
 import random
@@ -134,12 +134,12 @@ def verify_multi_round_switch():
         x2_l1, x2_l2 = compute_diff(x1_l1, l1_in_map), compute_diff(x1_l2, l2_in_map)
         x2_l1 = compute_diff2(x2_l1, l1_right_diff, L1_RIGHT)
         x2_l2 = compute_diff2(x2_l2, l2_right_diff, L2_RIGHT)
-        c1_l1, c1_l2 = katan.enc32_bit(x1_l1, x1_l2, key, 4)
-        c2_l1, c2_l2 = katan.enc32_bit(x2_l1, x2_l2, key, 4)
+        c1_l1, c1_l2 = katan_self.enc32_bit(x1_l1, x1_l2, key, 4)
+        c2_l1, c2_l2 = katan_self.enc32_bit(x2_l1, x2_l2, key, 4)
         c3_l1, c3_l2 = compute_diff(c1_l1, l1_out_map), compute_diff(c1_l2, l2_out_map)
         c4_l1, c4_l2 = compute_diff(c2_l1, l1_out_map), compute_diff(c2_l2, l2_out_map)
-        x3_l1, x3_l2 = katan.dec32_bit(c3_l1, c3_l2, key, 4)
-        x4_l1, x4_l2 = katan.dec32_bit(c4_l1, c4_l2, key, 4)
+        x3_l1, x3_l2 = katan_self.dec32_bit(c3_l1, c3_l2, key, 4)
+        x4_l1, x4_l2 = katan_self.dec32_bit(c4_l1, c4_l2, key, 4)
 
         diff_l1 = get_difference(x3_l1, x4_l1, L1_RIGHT)
         diff_l2 = get_difference(x3_l2, x4_l2, L2_RIGHT)

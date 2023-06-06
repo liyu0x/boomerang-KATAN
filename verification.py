@@ -1,5 +1,5 @@
 # verify boomerang-style switch
-import katan
+import katan_self
 import util
 import and_bct
 import random
@@ -39,8 +39,8 @@ def verify_one_round_switch(p1, l1_in, l1_out, l2_in, l2_out, key):
     p2_l2 = compute_different(p1_l2, l2_in, L2_BEFORE)
     p2_l2 = compute_different(p2_l2, l2_r_diff, L2_R)
 
-    c1_l1, c1_l2 = katan.enc32_bit(p1_l1, p1_l2, key, TEST_ROUND)
-    c2_l1, c2_l2 = katan.enc32_bit(p2_l1, p2_l2, key, TEST_ROUND)
+    c1_l1, c1_l2 = katan_self.enc32_bit(p1_l1, p1_l2, key, TEST_ROUND)
+    c2_l1, c2_l2 = katan_self.enc32_bit(p2_l1, p2_l2, key, TEST_ROUND)
 
     c3_l1 = compute_different(c1_l1, l1_out, L1_AFTER)
     c3_l2 = compute_different(c1_l2, l2_out, L2_AFTER)
@@ -48,8 +48,8 @@ def verify_one_round_switch(p1, l1_in, l1_out, l2_in, l2_out, key):
     c4_l1 = compute_different(c2_l1, l1_out, L1_AFTER)
     c4_l2 = compute_different(c2_l2, l2_out, L2_AFTER)
 
-    p3_l1, p3_l2 = katan.dec32_bit(c3_l1, c3_l2, key, TEST_ROUND)
-    p4_l1, p4_l2 = katan.dec32_bit(c4_l1, c4_l2, key, TEST_ROUND)
+    p3_l1, p3_l2 = katan_self.dec32_bit(c3_l1, c3_l2, key, TEST_ROUND)
+    p4_l1, p4_l2 = katan_self.dec32_bit(c4_l1, c4_l2, key, TEST_ROUND)
 
     diff_l1 = get_difference(p3_l1, p4_l1, L1_R)
     diff_l2 = get_difference(p3_l2, p4_l2, L2_R)

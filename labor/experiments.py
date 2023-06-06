@@ -1,4 +1,4 @@
-import random, katan, numpy, util
+import random, katan_self, numpy, util
 
 BCT_INPUT_SIZE, BCT_OUTPUT_SIZE = 2, 2
 N_BCT_INPUT_SIZE, N_BCT_OUTPUT_SIZE = 4, 4
@@ -124,8 +124,8 @@ def check_validation_bct():
         p2 = compute_different(p2, right_diff, [18])
         p2 = compute_different(p2, left_diff, [19 + 12])
 
-        c1 = katan.enc32(p1, key)
-        c2 = katan.enc32(p2, key)
+        c1 = katan_self.enc32(p1, key)
+        c2 = katan_self.enc32(p2, key)
 
         c3 = c1
         c3 = compute_different(c3, big_register_delta_and_out, [3 + 1, 8 + 1, 10 + 1, 12 + 1])
@@ -135,8 +135,8 @@ def check_validation_bct():
         c4 = compute_different(c4, big_register_delta_and_out, [3 + 1, 8 + 1, 10 + 1, 12 + 1])
         c4 = compute_different(c4, small_register_delta_and_out, [19 + 5 + 1, 19 + 8 + 1])
 
-        p3 = katan.dec32(c3, key)
-        p4 = katan.dec32(c4, key)
+        p3 = katan_self.dec32(c3, key)
+        p4 = katan_self.dec32(c4, key)
         r1 = get_difference(p3, p4, [18])
         l1 = get_difference(p3, p4, [19 + 12])
         if l1 == left_diff and r1 == right_diff:
