@@ -2,21 +2,19 @@ import random
 import math
 import multiprocessing
 from katan_task import checks
+# from simon_task import checks
 
 
-POOL = multiprocessing.Pool(processes=14)
-INPUD_DIFF = 0x80040400
-SWITCH_INPUT_DIFF = 0x10840000 
-SWITCH_OUTPUT_DIFF = 0x00004000
-OUTPUT_DIFF = 0x00200420
-ROUNDS = 50-1
-SWITCH_ROUNDS = 1
-SWITCH_START_ROUNDS = int(ROUNDS/2)
-OFFSET = 0
+POOL = multiprocessing.Pool(processes=6)
+ROUNDS = 60-1
+WEIGHT = 21
+# SWITCH_ROUNDS = 1
+# SWITCH_START_ROUNDS = int(ROUNDS/2)
+# OFFSET = 0
 
 
 def varify(in_diff, out_diff, rounds, boomerang, offset=0):
-    test_n = 2**17
+    test_n = 2**WEIGHT
     key = random.randint(0, 2**32)
     records = set()
     count = 0
@@ -31,7 +29,7 @@ def varify(in_diff, out_diff, rounds, boomerang, offset=0):
         count += 1
         records.add(x1)
     records = list(records)
-    batch_size = 1000
+    batch_size = 100000
     batch_num = int(len(records) / batch_size)
     for i in range(0, batch_num):
         task_list.append(
@@ -57,16 +55,38 @@ def varify(in_diff, out_diff, rounds, boomerang, offset=0):
 
 
 if __name__ == "__main__":
-    # check boomerang distinguisher prob
-    res = varify(INPUD_DIFF, OUTPUT_DIFF, ROUNDS, True)
-    print("boomerang distinguisher: {}\n".format(res))
+    data_file = open("check_list.txt", "r")
 
-    # check upper tail
-    # res = varify(INPUD_DIFF, SWITCH_INPUT_DIFF, SWITCH_START_ROUNDS-1, False)
+    data_list = []
+    
+    data = data_file.readline()
+    while data != "":
+        temps = data.split(",")
+        datas = []
+        for i in temps:
+            datas.append(int(i, 16))
+        data_list.append(datas)
+        data = data_file.readline()
+
+    count = 0
+    for dd in data_list:
+        res = varify(dd[0], dd[3], ROUNDS, True)
+        if res == "Invaild":
+            count += 1
+            print("in:{0}, out:{1}\n".format(hex(dd[0]), hex(dd[3])))
+        else:
+            print(res)
+    print("test cases: {0}, worng cases: {1}".format(len(data_list), count))
+    # check boomerang distinguisher prob
+    
+    
+
+    # # check upper tail
+    # res = varify(INPUD_DIFF, SWITCH_INPUT_DIFF, SWITCH_START_ROUNDS, False)
     # print("boomerang upper trail: {}\n".format(res))
 
     # # check lower trail
-    # res = varify(SWITCH_OUTPUT_DIFF, OUTPUT_DIFF, ROUNDS-1, False, SWITCH_START_ROUNDS+1)
+    # res = varify(SWITCH_OUTPUT_DIFF, OUTPUT_DIFF, ROUNDS, False, SWITCH_START_ROUNDS+1)
     # print("boomerang lower trail: {}\n".format(res))
 
     # # check upper boomerang
@@ -77,7 +97,7 @@ if __name__ == "__main__":
     # res = varify(SWITCH_INPUT_DIFF, OUTPUT_DIFF, ROUNDS-SWITCH_START_ROUNDS, True)
     # print("lower boomerang distinguisher: {}\n".format(res))
 
-    # # check boomerang switch
+    # check boomerang switch
     # res = varify(SWITCH_INPUT_DIFF, SWITCH_OUTPUT_DIFF, 1, True)
     # print("boomerang switch: {}\n".format(res))
 
