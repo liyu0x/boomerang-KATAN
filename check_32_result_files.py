@@ -1,14 +1,14 @@
 import random
 import math
 import multiprocessing
-from katan_task import checks
-# from simon_task import checks
+from task_katan import checks
+#from task_simon import checks
 
 
-POOL = multiprocessing.get_context("fork").Pool(processes=6)
-ROUNDS = 60-1
-WEIGHT = 21
-# SWITCH_ROUNDS = 1
+POOL = multiprocessing.Pool(processes=12)
+ROUNDS = 60
+WEIGHT = 22
+# SWITCH_ROUNDS = 1    
 # SWITCH_START_ROUNDS = int(ROUNDS/2)
 # OFFSET = 0
 
@@ -64,7 +64,11 @@ if __name__ == "__main__":
         temps = data.split(",")
         datas = []
         for i in temps:
-            datas.append(int(i, 16))
+            if i.startswith("0x"):
+                datas.append(int(i, 16))
+            else:
+                datas.append(int(i))
+        datas.append(1)
         data_list.append(datas)
         data = data_file.readline()
 
@@ -73,9 +77,9 @@ if __name__ == "__main__":
         res = varify(dd[0], dd[3], ROUNDS, True)
         if res == "Invaild":
             count += 1
-            print("in:{0}, out:{1}\n".format(hex(dd[0]), hex(dd[3])))
+            print("in:{0}, out:{1}, sols:{2}\n".format(hex(dd[0]), hex(dd[3]), dd[4]))
         else:
-            print(res)
+            print("prob:{0}, sols:{1}".format(res, dd[4]))
     print("test cases: {0}, worng cases: {1}".format(len(data_list), count))
     # check boomerang distinguisher prob
     

@@ -1,23 +1,25 @@
 import random
 import math
 import multiprocessing
-from katan_task import checks
+from task_katan import checks
+#from task_simon import checks
 
 
-POOL = multiprocessing.Pool(processes=14)
-INPUD_DIFF = 0x80040400
-SWITCH_INPUT_DIFF = 0x10840000 
-SWITCH_OUTPUT_DIFF = 0x00004000
-OUTPUT_DIFF = 0x00200420
-ROUNDS = 50-1
+POOL = multiprocessing.Pool(processes=12)
+INPUD_DIFF = 0x000002010080
+SWITCH_INPUT_DIFF = 0x20000000 
+SWITCH_OUTPUT_DIFF = 0x00000200
+OUTPUT_DIFF = 0x001008000001
+ROUNDS = 30
 SWITCH_ROUNDS = 1
 SWITCH_START_ROUNDS = int(ROUNDS/2)
 OFFSET = 0
+WORD_SIZE = 48
 
 
 def varify(in_diff, out_diff, rounds, boomerang, offset=0):
-    test_n = 2**17
-    key = random.randint(0, 2**32)
+    test_n = 2**19
+    key = random.randint(0, 2**WORD_SIZE)
     records = set()
     count = 0
     result = 0
@@ -44,7 +46,8 @@ def varify(in_diff, out_diff, rounds, boomerang, offset=0):
                     out_diff,
                     rounds,
                     offset,
-                    boomerang
+                    boomerang,
+                    WORD_SIZE
                 ),
             )
         )

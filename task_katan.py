@@ -1,10 +1,10 @@
 import katan_cipher
 
 
-def checks(x1s, key, input_diff, output_diff, rounds, offset, boomerang=True):
+def checks(x1s, key, input_diff, output_diff, rounds, offset, boomerang=True, version=32):
     x1s = list(x1s)
     count = 0
-    cipher = katan_cipher.KATAN(master_key=key)
+    cipher = katan_cipher.KATAN(master_key=key, version=version)
     if boomerang:
         for x1 in x1s:
             x2 = x1 ^ input_diff
