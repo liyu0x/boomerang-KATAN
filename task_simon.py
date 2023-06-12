@@ -1,7 +1,7 @@
 import simon
 
 
-def checks(x1s, key, input_diff, output_diff, rounds, offset, boomerang=True):
+def checks(x1s, key, input_diff, output_diff, rounds, offset, boomerang=True, word_size=32):
     x1s = list(x1s)
     count = 0
     if boomerang:
