@@ -1,0 +1,7 @@
+{
+    "cSpell.words": [
+        "katan"
+    ],
+    "python.formatting.provider": "black",
+    "python.formatting.blackPath":"path-to-/bin/black",
+}

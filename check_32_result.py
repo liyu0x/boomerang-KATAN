@@ -1,16 +1,16 @@
 import random
 import math
 import multiprocessing
-#from task_katan import checks
-from task_simon import checks
+from task_katan import checks
+#from task_simon import checks
 
 
 POOL = multiprocessing.get_context("fork").Pool(processes=12)
-INPUD_DIFF = 0x0002820C
+INPUD_DIFF = 0x00000800
 SWITCH_INPUT_DIFF = 0x20000000 
 SWITCH_OUTPUT_DIFF = 0x00000200
-OUTPUT_DIFF = 0x08300008
-ROUNDS = 8
+OUTPUT_DIFF = 0x08000005
+ROUNDS = 34
 SWITCH_ROUNDS = 1
 SWITCH_START_ROUNDS = int(ROUNDS/2)
 OFFSET = 0
@@ -18,7 +18,7 @@ WORD_SIZE = 32
 
 
 def varify(in_diff, out_diff, rounds, boomerang, offset=0):
-    test_n = 2**20
+    test_n = 2**31
     key = random.randint(0, 2**WORD_SIZE)
     records = set()
     count = 0
