@@ -49,7 +49,7 @@ def a8(num, block_size):
     return res
 
 
-# ##@cuda.jit
+# #@cuda.jit
 # def init_input_gpu(plaintext, block_size, temp_list):
 # res = [[], [], [], []]
 #
@@ -67,7 +67,7 @@ def a8(num, block_size):
 # temp_list[1] = int(initial_num, 2)
 
 
-#@cuda.jit
+@cuda.jit
 def g0(block_size, temp_list):
     num = temp_list[3]
     group_size = block_size // 4
@@ -96,7 +96,7 @@ def g0(block_size, temp_list):
     )
 
 
-#@cuda.jit
+@cuda.jit
 def g1(block_size, temp_list):
     num = temp_list[4]
     group_size = block_size // 4
@@ -124,7 +124,7 @@ def g1(block_size, temp_list):
     )
 
 
-#@cuda.jit
+@cuda.jit
 def rotation(rot_size, block_size, temp_list):
     num = temp_list[2]
     if rot_size > 0:
@@ -154,7 +154,7 @@ def rotation(rot_size, block_size, temp_list):
         )
 
 
-#@cuda.jit
+@cuda.jit
 def perm(block_size, temp_list, perm_list):
     num = temp_list[5]
     group_size = block_size // 4
@@ -195,18 +195,18 @@ def perm(block_size, temp_list, perm_list):
     )
 
 
-#@cuda.jit
-def enc(rounds, word_size, keys, temp_list, perm_list, perm_list64, thread_index):
-    plaintext = perm_list64[thread_index]
+@cuda.jit
+def enc(rounds, word_size, keys, temp_list, perm_list, temp_list64, thread_index):
+    plaintext = temp_list64[thread_index]
     alpha = 0
     beta = 1
     block_size = word_size // 2
     p_l = operator.rshift(plaintext, block_size)
     p_r = operator.and_(plaintext, 0xFFFFFFFF)
     # init_input_gpu(p_l, block_size, temp_list)
-    init_l = p_l
+    init_l = numpy.uint32(p_l)
     # init_input_gpu(p_r, block_size, temp_list)
-    init_r = p_r
+    init_r = numpy.uint32(p_r)
     for i in range(rounds):
         ori_l = init_l
 
@@ -233,31 +233,34 @@ def enc(rounds, word_size, keys, temp_list, perm_list, perm_list64, thread_index
         init_l = operator.xor(perm_out, init_r)  # ^ keys[i]
         init_r = ori_l
 
-    perm_list64[thread_index] = operator.xor(operator.lshift(init_l, block_size), init_r)
+    temp_list64[thread_index] = operator.xor(operator.lshift(init_l, block_size), init_r)
 
 
-#@cuda.jit
+@cuda.jit
 def start_gpu_task(keys, input_diff, output_diff, rounds, result_collector, temp_list, word_size, perm_list,
                    temp_list64):
-    weight = 0
-    thread_index = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
+    weight = 14
+    thread_index = operator.add(operator.mul(cuda.blockIdx.x, cuda.blockDim.x), cuda.threadIdx.x)
     res = 0
     used_list = temp_list[thread_index]
     start = thread_index * (2 ** weight)
     end = thread_index * (2 ** weight) + 2 ** weight
+
     for i in range(start, end):
         x1 = i
+        if x1 > (x1 ^ input_diff):
+            continue
         temp_list64[thread_index] = x1
-        enc(rounds, word_size, keys, used_list, temp_list64, perm_list, thread_index)
+        enc(rounds, word_size, keys, used_list, perm_list, temp_list64, thread_index)
         c1 = temp_list64[thread_index]
 
         x2 = x1 ^ input_diff
         temp_list64[thread_index] = x2
-        enc(rounds, word_size, keys, used_list, temp_list64, perm_list, thread_index)
+        enc(rounds, word_size, keys, used_list, perm_list, temp_list64, thread_index)
         c2 = temp_list64[thread_index]
 
         if c1 ^ c2 == output_diff:
-            res += 1
+            res = operator.add(res, 1)
 
         # c3 = c1 ^ output_diff
         # c4 = c2 ^ output_diff
@@ -274,13 +277,13 @@ def start_gpu_task(keys, input_diff, output_diff, rounds, result_collector, temp
 
 # GPU Tasks
 def test():
-    diff_left = 0x40000000
-    diff_right = 0x24000000
-    out_left = 0x40000000
-    out_right = 0x00000000
+    diff_left = 0x00008000
+    diff_right = 0x00008400
+    out_left = 0x00008400
+    out_right = 0x00008000
     input_dff = diff_left << 32 | diff_right
     output_diff = out_left << 32 | out_right
-    rounds = 2
+    rounds = 3
     word_size = 64
 
     # GPU Setting
@@ -288,7 +291,7 @@ def test():
     blocks_in_per_grid = 2 ** 10
     total_threads = threads_in_per_block * blocks_in_per_grid
 
-    result = numpy.zeros(total_threads, dtype=numpy.uint32)
+    result = numpy.zeros(total_threads, dtype=numpy.uint64)
     temp_list = numpy.array([[0 for _ in range(32)] for _ in range(total_threads)], dtype=numpy.uint32)
     temp_list64 = numpy.zeros(total_threads, dtype=numpy.uint64)
     key = random.randint(0, 2 ** 128)
@@ -306,7 +309,6 @@ def test():
                                                               cuda_result,
                                                               cuda_temp_list, word_size, cuda_perm_list,
                                                               cuda_temp_list64))
-
     res = 0
     for r in cuda_result:
         res += r
@@ -335,5 +337,3 @@ test()
 # print(temp[3])
 # print(temp[4])
 # print(temp[5])
-
-enc(rounds, word_size, keys, temp_list, perm_list, perm_list64, thread_index):

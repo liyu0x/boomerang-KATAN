@@ -180,13 +180,13 @@ def test():
     print("w:{}".format(math.log(prob, 2)))
 
 
-# test()
+test()
 
-n = 0x12345678
-temp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-sand = Sand()
-r = sand.perm(n, 32)
-print(rotation(n, 1, 32))
-print(g0(n, 32))
-print(g1(n, 32))
-print(r)
+# n = 0x12345678
+# temp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+# sand = Sand()
+# r = sand.perm(n, 32)
+# print(rotation(n, 1, 32))
+# print(g0(n, 32))
+# print(g1(n, 32))
+# print(r)
