@@ -6,6 +6,16 @@ import random
 import time
 import operator
 
+INPUT_LEFT_DIFF = 0x00000084
+INPUT_RIGHT_DIFF = 0x04008046
+OUTPUT_LEFT_DIFF = 0x00000080
+OUTPUT_RIGHT_DIFF = 0x00000084
+WORD_SIZE = 64
+THREADS_IN_PER_BLOCK_EXPO = 10
+BLOCK_IN_PER_GRID_EXPO = 10
+TASK_NUM_IN_PER_THREAD_EXPO = 32 - THREADS_IN_PER_BLOCK_EXPO - BLOCK_IN_PER_GRID_EXPO
+ROUNDS = 1
+
 
 def init_input(plaintext, block_size):
     res = [[], [], [], []]
@@ -238,18 +248,19 @@ def enc(rounds, word_size, keys, temp_list, perm_list, temp_list64, thread_index
 
 @cuda.jit
 def start_gpu_task(keys, input_diff, output_diff, rounds, result_collector, temp_list, word_size, perm_list,
-                   temp_list64):
-    weight = 14
+                   temp_list64, task_num):
     thread_index = operator.add(operator.mul(cuda.blockIdx.x, cuda.blockDim.x), cuda.threadIdx.x)
     res = 0
     used_list = temp_list[thread_index]
-    start = thread_index * (2 ** weight)
-    end = thread_index * (2 ** weight) + 2 ** weight
-
+    start = thread_index * (2 ** task_num)
+    end = (thread_index + 1) * (2 ** task_num)
     for i in range(start, end):
         x1 = i
-        if x1 > (x1 ^ input_diff):
-            continue
+        # used_list[2] = x1
+        # rotation(16, 32, used_list)
+        # x1 = used_list[2]
+        # if x1 > (x1 ^ input_diff):
+        #     continue
         temp_list64[thread_index] = x1
         enc(rounds, word_size, keys, used_list, perm_list, temp_list64, thread_index)
         c1 = temp_list64[thread_index]
@@ -272,27 +283,22 @@ def start_gpu_task(keys, input_diff, output_diff, rounds, result_collector, temp
         # x4 = used_list[0]
         # if x3 ^ x4 == input_diff:
         #     res += 2
-    result_collector[thread_index] = res
+    cuda.atomic.add(result_collector, 0, res)
 
 
 # GPU Tasks
 def test():
-    diff_left = 0x00008000
-    diff_right = 0x00008400
-    out_left = 0x00008400
-    out_right = 0x00008000
-    input_dff = diff_left << 32 | diff_right
-    output_diff = out_left << 32 | out_right
-    rounds = 3
-    word_size = 64
+    input_dff = INPUT_LEFT_DIFF << 32 | INPUT_RIGHT_DIFF
+    output_diff = OUTPUT_LEFT_DIFF << 32 | OUTPUT_RIGHT_DIFF
 
     # GPU Setting
-    threads_in_per_block = 2 ** 8
-    blocks_in_per_grid = 2 ** 10
-    total_threads = threads_in_per_block * blocks_in_per_grid
+    thread_in_per_block = numpy.uint64(math.pow(2, THREADS_IN_PER_BLOCK_EXPO))
+    block_in_per_grid = numpy.uint64(math.pow(2, BLOCK_IN_PER_GRID_EXPO))
 
-    result = numpy.zeros(total_threads, dtype=numpy.uint64)
-    temp_list = numpy.array([[0 for _ in range(32)] for _ in range(total_threads)], dtype=numpy.uint32)
+    total_threads = thread_in_per_block * block_in_per_grid
+
+    result = numpy.zeros((1,), dtype=numpy.float64)
+    temp_list = numpy.array([[0 for _ in range(7)] for _ in range(total_threads)], dtype=numpy.uint32)
     temp_list64 = numpy.zeros(total_threads, dtype=numpy.uint64)
     key = random.randint(0, 2 ** 128)
     sub_keys = key_schedule(key)
@@ -305,17 +311,17 @@ def test():
     cuda_temp_list64 = cuda.to_device(temp_list64)
     start_time = time.time()
 
-    (start_gpu_task[blocks_in_per_grid, threads_in_per_block](cuda_sub_keys, input_dff, output_diff, rounds,
-                                                              cuda_result,
-                                                              cuda_temp_list, word_size, cuda_perm_list,
-                                                              cuda_temp_list64))
-    res = 0
-    for r in cuda_result:
-        res += r
+    print("Task star")
+    (start_gpu_task[block_in_per_grid, thread_in_per_block](cuda_sub_keys, input_dff, output_diff, ROUNDS,
+                                                            cuda_result,
+                                                            cuda_temp_list, WORD_SIZE, cuda_perm_list,
+                                                            cuda_temp_list64, TASK_NUM_IN_PER_THREAD_EXPO))
+    print("Task End")
+    res = cuda_result[0]
     if res == 0:
         tip = "Invalid"
     else:
-        tip = math.log2(res / 2 ** (10 + 8 + 14))
+        tip = math.log2(res / 2 ** (BLOCK_IN_PER_GRID_EXPO + THREADS_IN_PER_BLOCK_EXPO + TASK_NUM_IN_PER_THREAD_EXPO))
     print("w:{}".format(tip))
     print(res)
     print("Task done, time:{}".format(time.time() - start_time))
