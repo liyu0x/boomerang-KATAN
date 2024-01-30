@@ -149,14 +149,14 @@ class Sand:
 
 def test():
     temp = []
-    diff_left = 0x00008000
-    diff_right = 0x00008400
-    out_left = 0x00008000
-    out_right = 0x00000000
+    diff_left = 0x00000008
+    diff_right = 0x40000858
+    out_left = 0x04000085
+    out_right = 0x00000080
     input_dff = diff_left << 32 | diff_right
     output_diff = out_left << 32 | out_right
     total = 2 ** 15
-    rounds = 2
+    rounds = 4
     sand = Sand()
     counter = 0
     key = random.randint(0, 2 ** 128)

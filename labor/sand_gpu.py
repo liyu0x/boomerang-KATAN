@@ -5,16 +5,17 @@ from numba import cuda
 import random
 import time
 import operator
+from numba.cuda.random import create_xoroshiro128p_states, xoroshiro128p_uniform_float32
 
-INPUT_LEFT_DIFF = 0x00000084
-INPUT_RIGHT_DIFF = 0x04008046
-OUTPUT_LEFT_DIFF = 0x00000080
-OUTPUT_RIGHT_DIFF = 0x00000084
+INPUT_LEFT_DIFF = 0x00000008
+INPUT_RIGHT_DIFF = 0x40000858
+OUTPUT_LEFT_DIFF = 0x04000085
+OUTPUT_RIGHT_DIFF = 0x00000080
 WORD_SIZE = 64
 THREADS_IN_PER_BLOCK_EXPO = 10
-BLOCK_IN_PER_GRID_EXPO = 10
+BLOCK_IN_PER_GRID_EXPO = 15
 TASK_NUM_IN_PER_THREAD_EXPO = 32 - THREADS_IN_PER_BLOCK_EXPO - BLOCK_IN_PER_GRID_EXPO
-ROUNDS = 1
+ROUNDS = 4
 
 
 def init_input(plaintext, block_size):
@@ -77,9 +78,8 @@ def a8(num, block_size):
 # temp_list[1] = int(initial_num, 2)
 
 
-@cuda.jit
-def g0(block_size, temp_list):
-    num = temp_list[3]
+@cuda.jit(device=True)
+def g0(num, block_size):
     group_size = block_size // 4
     x0 = operator.and_(num, 0xFF)
     x1 = operator.and_(operator.rshift(num, group_size), 0xFF)
@@ -95,7 +95,7 @@ def g0(block_size, temp_list):
     # y{1} = x{1}
     y1 = x1
 
-    temp_list[3] = operator.xor(
+    return operator.xor(
         operator.xor(
             operator.xor(
                 operator.lshift(y3, group_size * 3),
@@ -106,9 +106,8 @@ def g0(block_size, temp_list):
     )
 
 
-@cuda.jit
-def g1(block_size, temp_list):
-    num = temp_list[4]
+@cuda.jit(device=True)
+def g1(num, block_size):
     group_size = block_size // 4
     x0 = operator.and_(num, 0xFF)
     x1 = operator.and_(operator.rshift(num, group_size), 0xFF)
@@ -123,7 +122,7 @@ def g1(block_size, temp_list):
     y3 = x3
     # y{0} = x{0}
     y0 = x0
-    temp_list[4] = operator.xor(
+    return operator.xor(
         operator.xor(
             operator.xor(
                 operator.lshift(y3, group_size * 3),
@@ -134,9 +133,8 @@ def g1(block_size, temp_list):
     )
 
 
-@cuda.jit
-def rotation(rot_size, block_size, temp_list):
-    num = temp_list[2]
+@cuda.jit(device=True)
+def rotation(num, rot_size, block_size):
     if rot_size > 0:
         group_size = block_size // 4
         n3 = operator.and_(operator.rshift(num, group_size * 3), 0xFF)
@@ -153,7 +151,7 @@ def rotation(rot_size, block_size, temp_list):
         n0 = operator.and_(operator.xor(operator.lshift(n0, rot_size), operator.rshift(n0, group_size - rot_size)),
                            0xFF)
 
-        temp_list[2] = operator.xor(
+        return operator.xor(
             operator.xor(
                 operator.xor(
                     operator.lshift(n3, group_size * 3),
@@ -162,11 +160,12 @@ def rotation(rot_size, block_size, temp_list):
                 operator.lshift(n1, group_size)
             ), n0
         )
+    else:
+        return num
 
 
-@cuda.jit
-def perm(block_size, temp_list, perm_list):
-    num = temp_list[5]
+@cuda.jit(device=True)
+def perm(num, block_size, perm_list):
     group_size = block_size // 4
 
     res0 = operator.and_(operator.rshift(operator.and_(num, 0xFF), 7 - perm_list[0]), 0b1)
@@ -194,7 +193,7 @@ def perm(block_size, temp_list, perm_list):
             operator.rshift(operator.and_(operator.rshift(num, group_size * 3), 0xFF), 7 - perm_list[j]),
             0b1))
 
-    temp_list[5] = operator.xor(
+    return operator.xor(
         operator.xor(
             operator.xor(
                 operator.lshift(res3, group_size * 3),
@@ -205,12 +204,11 @@ def perm(block_size, temp_list, perm_list):
     )
 
 
-@cuda.jit
-def enc(rounds, word_size, keys, temp_list, perm_list, temp_list64, thread_index):
-    plaintext = temp_list64[thread_index]
+@cuda.jit(device=True)
+def enc(plaintext, rounds, word_size, keys, perm_list):
     alpha = 0
     beta = 1
-    block_size = word_size // 2
+    block_size = numpy.uint32(word_size // 2)
     p_l = operator.rshift(plaintext, block_size)
     p_r = operator.and_(plaintext, 0xFFFFFFFF)
     # init_input_gpu(p_l, block_size, temp_list)
@@ -220,55 +218,44 @@ def enc(rounds, word_size, keys, temp_list, perm_list, temp_list64, thread_index
     for i in range(rounds):
         ori_l = init_l
 
-        temp_list[2] = init_l
-        rotation(alpha, block_size, temp_list)
-        rot_g0 = temp_list[2]
+        rot_g0 = rotation(init_l, alpha, block_size)
 
-        temp_list[3] = rot_g0
-        g0(block_size, temp_list)
-        g0_out = temp_list[3]
+        g0_out = g0(rot_g0, block_size)
 
-        temp_list[2] = init_l
-        rotation(beta, block_size, temp_list)
-        rot_g1 = temp_list[2]
+        rot_g1 = rotation(init_l, beta, block_size)
 
-        temp_list[4] = rot_g1
-        g1(block_size, temp_list)
-        g1_out = temp_list[4]
+        g1_out = g1(rot_g1, block_size)
 
-        temp_list[5] = operator.xor(g0_out, g1_out)
-        perm(block_size, temp_list, perm_list)
-        perm_out = temp_list[5]
+        perm_out = perm(operator.xor(g0_out, g1_out), block_size, perm_list)
 
         init_l = operator.xor(perm_out, init_r)  # ^ keys[i]
         init_r = ori_l
 
-    temp_list64[thread_index] = operator.xor(operator.lshift(init_l, block_size), init_r)
+        init_l = numpy.uint32(init_l)
+    return init_l << block_size | init_r
 
 
 @cuda.jit
-def start_gpu_task(keys, input_diff, output_diff, rounds, result_collector, temp_list, word_size, perm_list,
-                   temp_list64, task_num):
+def start_gpu_task(keys, input_diff, output_diff, rounds, result_collector, word_size, perm_list, task_num, rng_states):
     thread_index = operator.add(operator.mul(cuda.blockIdx.x, cuda.blockDim.x), cuda.threadIdx.x)
     res = 0
-    used_list = temp_list[thread_index]
     start = thread_index * (2 ** task_num)
     end = (thread_index + 1) * (2 ** task_num)
+    # random_vari = 1
+    # if thread_index % 11 == 0:
+    #     random_vari = 2 ** 32
     for i in range(start, end):
-        x1 = i
-        # used_list[2] = x1
-        # rotation(16, 32, used_list)
-        # x1 = used_list[2]
+        x = xoroshiro128p_uniform_float32(rng_states, thread_index)
+        random_vari = numpy.uint64(1)
+        if x >= 0.5:
+            random_vari = 2 ** 32
+        x1 = numpy.uint64(i * random_vari)
         # if x1 > (x1 ^ input_diff):
         #     continue
-        temp_list64[thread_index] = x1
-        enc(rounds, word_size, keys, used_list, perm_list, temp_list64, thread_index)
-        c1 = temp_list64[thread_index]
+        c1 = enc(x1, rounds, word_size, keys, perm_list)
 
         x2 = x1 ^ input_diff
-        temp_list64[thread_index] = x2
-        enc(rounds, word_size, keys, used_list, perm_list, temp_list64, thread_index)
-        c2 = temp_list64[thread_index]
+        c2 = enc(x2, rounds, word_size, keys, perm_list)
 
         if c1 ^ c2 == output_diff:
             res = operator.add(res, 1)
@@ -292,30 +279,28 @@ def test():
     output_diff = OUTPUT_LEFT_DIFF << 32 | OUTPUT_RIGHT_DIFF
 
     # GPU Setting
-    thread_in_per_block = numpy.uint64(math.pow(2, THREADS_IN_PER_BLOCK_EXPO))
-    block_in_per_grid = numpy.uint64(math.pow(2, BLOCK_IN_PER_GRID_EXPO))
+    thread_in_per_block = 2 ** THREADS_IN_PER_BLOCK_EXPO
+    block_in_per_grid = 2 ** BLOCK_IN_PER_GRID_EXPO
 
     total_threads = thread_in_per_block * block_in_per_grid
 
     result = numpy.zeros((1,), dtype=numpy.float64)
-    temp_list = numpy.array([[0 for _ in range(7)] for _ in range(total_threads)], dtype=numpy.uint32)
-    temp_list64 = numpy.zeros(total_threads, dtype=numpy.uint64)
     key = random.randint(0, 2 ** 128)
     sub_keys = key_schedule(key)
     perm_list = [7, 4, 1, 6, 3, 0, 5, 2]
 
     cuda_sub_keys = cuda.to_device(sub_keys)
     cuda_result = cuda.to_device(result)
-    cuda_temp_list = cuda.to_device(temp_list)
     cuda_perm_list = cuda.to_device(perm_list)
-    cuda_temp_list64 = cuda.to_device(temp_list64)
+    rng_states = create_xoroshiro128p_states(total_threads, seed=1)
+
     start_time = time.time()
 
     print("Task star")
     (start_gpu_task[block_in_per_grid, thread_in_per_block](cuda_sub_keys, input_dff, output_diff, ROUNDS,
                                                             cuda_result,
-                                                            cuda_temp_list, WORD_SIZE, cuda_perm_list,
-                                                            cuda_temp_list64, TASK_NUM_IN_PER_THREAD_EXPO))
+                                                            WORD_SIZE, cuda_perm_list,
+                                                            TASK_NUM_IN_PER_THREAD_EXPO, rng_states))
     print("Task End")
     res = cuda_result[0]
     if res == 0:
@@ -328,18 +313,3 @@ def test():
 
 
 test()
-
-# n = 0x12345678
-# temp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-# temp[2] = n
-# temp[3] = n
-# temp[4] = n
-# temp[5] = n
-# g0(32, temp)
-# g1(32, temp)
-# rotation(1, 32, temp)
-# perm(32, temp, [7, 4, 1, 6, 3, 0, 5, 2])
-# print(temp[2])
-# print(temp[3])
-# print(temp[4])
-# print(temp[5])
