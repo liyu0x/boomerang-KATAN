@@ -1,21 +1,21 @@
-import math
-import random, copy
+import copy
+import random
 
 
 def init_input(plaintext, block_size):
     return plaintext
-    # res = [[], [], [], []]
-    # binary = bin(plaintext)[2:]
-    # binary = binary.zfill(block_size)
-    # for i in range(block_size):
-    #     group_index = int(i) % 4
-    #     res[group_index].append(binary[i])
-    # for r in res:
-    #     r.reverse()
-    # rl = res[3] + res[2] + res[1] + res[0]
-    # rl.reverse()
-    # initial_num = ''.join(rl)
-    # return int(initial_num, 2)
+    res = [[], [], [], []]
+    binary = bin(plaintext)[2:]
+    binary = binary.zfill(block_size)
+    for i in range(block_size):
+        group_index = int(i) % 4
+        res[group_index].append(binary[i])
+    for r in res:
+        r.reverse()
+    rl = res[3] + res[2] + res[1] + res[0]
+    rl.reverse()
+    initial_num = ''.join(rl)
+    return int(initial_num, 2)
 
 
 def g0(num, block_size):
@@ -90,10 +90,11 @@ def a8(num, block_size):
 
 
 def key_schedule(key):
-    k_3 = init_input(key >> 32 * 3, 32)
-    k_2 = init_input(key >> 32 * 2, 32)
-    k_1 = init_input(key >> 32 * 1, 32)
-    k_0 = init_input(key >> 32 * 0, 32)
+    mask = 0xFFFFFFFF
+    k_3 = init_input((key >> 32 * 3) & mask, 32)
+    k_2 = init_input((key >> 32 * 2) & mask, 32)
+    k_1 = init_input((key >> 32 * 1) & mask, 32)
+    k_0 = init_input((key >> 32 * 0) & mask, 32)
     block_size = 128 // 4
     sub_key = [k_0, k_1, k_2, k_3]
     for i in range(48 - 4):
@@ -126,12 +127,13 @@ class Sand:
         mask = 0xFFFFFFFF
         if block_size == 64:
             mask = 0xFFFFFFFFFFFFFFFF
-        p_l = plaintext >> block_size
+        p_l = (plaintext >> block_size) & mask
         p_r = plaintext & mask
-        init_l = init_input(p_l, block_size)
-        init_r = init_input(p_r, block_size)
+        init_l = p_l  # init_input(p_l, block_size)
+        init_r = p_r  # init_input(p_r, block_size)
         sub_key = key_schedule(key)
         for i in range(rounds):
+            # print("left part:{}, right part:{}, key:{}".format(hex(init_l), hex(init_r), hex(sub_key[i])))
             ori_l = init_l
             rot_g0 = rotation(init_l, self.alpha, block_size)
             rot_g1 = rotation(init_l, self.beta, block_size)
@@ -141,8 +143,34 @@ class Sand:
 
             perm = self.perm(g0_out ^ g1_out, block_size)
 
-            init_l = perm ^ init_r
+            init_l = perm ^ init_r ^ sub_key[i]
             init_r = ori_l
+
+        return init_l << block_size | init_r
+
+    def dec(self, ciphertext, rounds, word_size, key):
+        block_size = word_size // 2
+        mask = 0xFFFFFFFF
+        if block_size == 64:
+            mask = 0xFFFFFFFFFFFFFFFF
+        p_l = (ciphertext >> block_size) & mask
+        p_r = ciphertext & mask
+        init_l = p_l  # init_input(p_l, block_size)
+        init_r = p_r  # init_input(p_r, block_size)
+        sub_key = key_schedule(key)
+        for i in range(rounds - 1, -1, -1):
+            ori_r = init_r
+            rot_g0 = rotation(init_r, self.alpha, block_size)
+            rot_g1 = rotation(init_r, self.beta, block_size)
+
+            g0_out = g0(rot_g0, block_size)
+            g1_out = g1(rot_g1, block_size)
+
+            perm = self.perm(g0_out ^ g1_out, block_size)
+
+            init_r = perm ^ init_l ^ sub_key[i]
+            init_l = ori_r
+            # print("left part:{}, right part:{}, key:{}".format(hex(init_l), hex(init_r), hex(sub_key[i])))
 
         return init_l << block_size | init_r
 
@@ -155,7 +183,7 @@ def test():
     out_right = 0x00000080
     input_dff = diff_left << 32 | diff_right
     output_diff = out_left << 32 | out_right
-    total = 2 ** 15
+    total = 2 ** 10
     rounds = 4
     sand = Sand()
     counter = 0
@@ -171,22 +199,18 @@ def test():
             continue
         temp.append(x1)
         c1 = sand.enc(x1, rounds, 64, key)
-        c2 = sand.enc(x2, rounds, 64, key)
-        diff = c1 ^ c2
-        if diff == output_diff:
-            counter += 1
+        # print("Dec")
+        nx1 = sand.dec(c1, rounds, 64, key)
+        assert x1 == nx1
+        # c2 = sand.enc(x2, rounds, 64, key)
+        # nx2 = sand.dec(c2, rounds, 64, key)
+        # assert x2 == nx2
+        # diff = c1 ^ c2
+        # if diff == output_diff:
+        #     counter += 1
 
-    prob = counter / total
-    print("w:{}".format(math.log(prob, 2)))
+    # prob = counter / total
+    # print("w:{}".format(math.log(prob, 2)))
 
 
 test()
-
-# n = 0x12345678
-# temp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-# sand = Sand()
-# r = sand.perm(n, 32)
-# print(rotation(n, 1, 32))
-# print(g0(n, 32))
-# print(g1(n, 32))
-# print(r)

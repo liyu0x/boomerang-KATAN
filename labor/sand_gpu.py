@@ -7,15 +7,15 @@ import time
 import operator
 from numba.cuda.random import create_xoroshiro128p_states, xoroshiro128p_uniform_float32
 
-INPUT_LEFT_DIFF = 0x00000008
-INPUT_RIGHT_DIFF = 0x40000858
-OUTPUT_LEFT_DIFF = 0x04000085
-OUTPUT_RIGHT_DIFF = 0x00000080
+INPUT_LEFT_DIFF = 0x20000000
+INPUT_RIGHT_DIFF = 0x21000000
+OUTPUT_LEFT_DIFF = 0x00000000
+OUTPUT_RIGHT_DIFF = 0x00000000
 WORD_SIZE = 64
 THREADS_IN_PER_BLOCK_EXPO = 10
 BLOCK_IN_PER_GRID_EXPO = 15
 TASK_NUM_IN_PER_THREAD_EXPO = 32 - THREADS_IN_PER_BLOCK_EXPO - BLOCK_IN_PER_GRID_EXPO
-ROUNDS = 4
+ROUNDS = 5
 
 
 def init_input(plaintext, block_size):
@@ -228,10 +228,42 @@ def enc(plaintext, rounds, word_size, keys, perm_list):
 
         perm_out = perm(operator.xor(g0_out, g1_out), block_size, perm_list)
 
-        init_l = operator.xor(perm_out, init_r)  # ^ keys[i]
+        init_l = operator.xor(perm_out, init_r)
         init_r = ori_l
 
         init_l = numpy.uint32(init_l)
+    return init_l << block_size | init_r
+
+
+@cuda.jit(device=True)
+def dec(ciphertext, rounds, word_size, keys, perm_list):
+    alpha = 0
+    beta = 1
+    block_size = numpy.uint32(word_size // 2)
+    c_l = operator.rshift(ciphertext, block_size)
+    c_r = operator.and_(ciphertext, 0xFFFFFFFF)
+    # init_input_gpu(p_l, block_size, temp_list)
+    init_l = numpy.uint32(c_l)
+    # init_input_gpu(p_r, block_size, temp_list)
+    init_r = numpy.uint32(c_r)
+    for i in range(rounds - 1, -1, -1):
+        ori_r = init_r
+
+        rot_g0 = rotation(init_l, alpha, block_size)
+
+        g0_out = g0(rot_g0, block_size)
+
+        rot_g1 = rotation(init_l, beta, block_size)
+
+        g1_out = g1(rot_g1, block_size)
+
+        perm_out = perm(operator.xor(g0_out, g1_out), block_size, perm_list)
+
+        init_r = operator.xor(perm_out, init_l)
+
+        init_l = ori_r
+
+        init_r = numpy.uint32(init_r)
     return init_l << block_size | init_r
 
 
@@ -253,24 +285,22 @@ def start_gpu_task(keys, input_diff, output_diff, rounds, result_collector, word
         # if x1 > (x1 ^ input_diff):
         #     continue
         c1 = enc(x1, rounds, word_size, keys, perm_list)
-
-        x2 = x1 ^ input_diff
-        c2 = enc(x2, rounds, word_size, keys, perm_list)
-
-        if c1 ^ c2 == output_diff:
-            res = operator.add(res, 1)
-
+        np1 = dec(c1, rounds, word_size, keys, perm_list)
+        if c1 == np1:
+            res += 1
+        # x2 = x1 ^ input_diff
+        # c2 = enc(x2, rounds, word_size, keys, perm_list)
+        #
         # c3 = c1 ^ output_diff
         # c4 = c2 ^ output_diff
         #
-        # dec(c3, keys, ir, offset, rounds, used_list)
-        # x3 = used_list[0]
+        # x3 = dec(c3, rounds, word_size, keys, perm_list)
+        # x4 = dec(c4, rounds, word_size, keys, perm_list)
         #
-        # dec(c4, keys, ir, offset, rounds, used_list)
-        # x4 = used_list[0]
         # if x3 ^ x4 == input_diff:
-        #     res += 2
-    cuda.atomic.add(result_collector, 0, res)
+        #     cuda.atomic.add(result_collector, 0, 1)
+        #     res += 1
+    result_collector[thread_index] = res
 
 
 # GPU Tasks
@@ -284,7 +314,7 @@ def test():
 
     total_threads = thread_in_per_block * block_in_per_grid
 
-    result = numpy.zeros((1,), dtype=numpy.float64)
+    result = numpy.zeros((total_threads,), dtype=numpy.int32)
     key = random.randint(0, 2 ** 128)
     sub_keys = key_schedule(key)
     perm_list = [7, 4, 1, 6, 3, 0, 5, 2]
@@ -302,7 +332,10 @@ def test():
                                                             WORD_SIZE, cuda_perm_list,
                                                             TASK_NUM_IN_PER_THREAD_EXPO, rng_states))
     print("Task End")
-    res = cuda_result[0]
+    res = 0
+    for r in cuda_result:
+        res += r
+    print(res)
     if res == 0:
         tip = "Invalid"
     else:
