@@ -184,7 +184,7 @@ def test():
     input_dff = diff_left << 32 | diff_right
     output_diff = out_left << 32 | out_right
     total = 2 ** 10
-    rounds = 4
+    rounds = 1
     sand = Sand()
     counter = 0
     key = random.randint(0, 2 ** 128)
